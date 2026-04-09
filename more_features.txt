@@ -1,0 +1,157 @@
+Criminal Management System - Updated Feature Notes
+
+1. Example Data Stored in the Database
+
+Users
+Username	Password	Role
+admin	admin123	Officer
+detective	detect123	Detective
+
+Criminals
+ID	Name	Age	Crime
+1	John Doe	32	Robbery
+2	Alex Mercer	40	Cyber Crime
+3	Maria Lopez	29	Drug Trafficking
+4	David King	36	Fraud
+
+Cases
+Case ID	Criminal ID	Description
+101	1	Bank robbery
+102	2	Hacking case
+103	3	Drug smuggling
+104	4	Financial fraud
+
+2. How the Data Flow Works
+
+View (UI)
+   ↓
+Facade
+   ↓
+Controller
+   ↓
+Service
+   ↓
+Repository / Database
+
+Example: Search Criminal
+
+Search Criminal UI
+      ↓
+CriminalManagementFacade
+      ↓
+CriminalController
+      ↓
+CriminalService
+      ↓
+CriminalIdSearchStrategy
+      ↓
+InMemoryCriminalRepository
+      ↓
+CriminalDatabase.criminals
+
+3. Main Use Cases
+
+Use Case 1: Login
+- Actor: Officer or detective.
+- The user enters username and password.
+- The UI sends the request through the facade.
+- AuthService checks the credentials against the stored users.
+
+Use Case 2: Add Criminal
+- Actor: Logged-in officer.
+- The UI collects criminal details.
+- CriminalValidator checks the data.
+- Criminal.Builder creates the object.
+- CriminalService stores it through the repository.
+
+Use Case 3: Search Criminal
+- Actor: Logged-in officer.
+- The user enters a criminal ID.
+- CriminalService uses the Strategy pattern.
+- The repository returns the criminal from the database store.
+
+Use Case 4: Update or Delete Criminal
+- Actor: Logged-in officer.
+- The UI sends the criminal ID and new crime data or delete request.
+- The controller passes the request to the service.
+- The repository updates or removes the record.
+
+Use Case 5: Create Case Record
+- Actor: Logged-in officer.
+- The CaseController creates the CaseRecord using the Factory.
+- The CaseService stores it in CriminalDatabase.
+
+4. Patterns Used in the Project
+
+Singleton
+- File: app/AppContext.java
+- How: one private static instance, private constructor, getInstance() method.
+- Why: one central access point for the application facade.
+
+Facade
+- File: facade/CriminalManagementFacade.java
+- How: the UI talks to one class instead of many controllers and services.
+- Why: simplifies the front-end flow.
+
+Builder
+- File: model/Criminal.java
+- How: Criminal.Builder builds a criminal object step by step.
+- Why: easier object creation and future expansion.
+
+Factory
+- File: model/ModelFactory.java
+- How: static methods create Criminal, CaseRecord, Evidence, BiometricData, and User.
+- Why: centralizes object creation.
+
+Strategy
+- Files: strategy/CriminalSearchStrategy.java and strategy/CriminalIdSearchStrategy.java
+- How: search logic is separated behind an interface.
+- Why: allows future search types without changing the controller.
+
+5. Design Principles Used
+
+Single Responsibility Principle
+- validation/CriminalValidator.java handles validation only.
+- repository/InMemoryCriminalRepository.java handles data access only.
+- Controllers coordinate requests only.
+
+Open/Closed Principle
+- New search behavior can be added by creating a new strategy class.
+- New object creation logic can be added through factory methods.
+
+Dependency Inversion Principle
+- CriminalService depends on CriminalRepository and CriminalSearchStrategy interfaces.
+- MainUI depends on the CriminalManagement facade interface.
+
+Interface Segregation Principle
+- CriminalRepository, CriminalSearchStrategy, and CriminalManagement are focused interfaces.
+- Classes only implement the methods they need.
+
+6. Example Test in MainUI
+
+CriminalController cc = new CriminalController();
+
+Criminal c = cc.searchCriminal(2);
+
+System.out.println("Name: " + c.getName());
+System.out.println("Crime: " + c.getCrimeType());
+
+Output
+
+Name: Alex Mercer
+Crime: Cyber Crime
+
+7. Quick Presentation Points
+
+- The project is MVC-based.
+- The UI is separated from the logic layer.
+- The code now shows 5 use cases clearly.
+- The code includes Singleton, Facade, Builder, Factory, and Strategy.
+- The code also shows SRP, OCP, DIP, and ISP.
+
+8. Sample Data to Mention in Demo
+
+- Username: admin, Password: admin123, Role: Officer
+- Username: detective, Password: detect123, Role: Detective
+- Sample criminal: Alex Mercer, Crime: Cyber Crime
+- Sample case: 102, Hacking case
