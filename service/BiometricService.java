@@ -5,8 +5,8 @@ import model.BiometricData;
 
 public class BiometricService {
 
-    public void storeBiometric(BiometricData data) {
-        CriminalDatabase.storeBiometric(data);
+    public boolean storeBiometric(BiometricData data) {
+        return CriminalDatabase.storeBiometric(data);
     }
 
     public BiometricData getBiometric(int criminalId) {

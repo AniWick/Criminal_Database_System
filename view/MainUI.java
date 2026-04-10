@@ -2,7 +2,10 @@ package view;
 
 import app.AppContext;
 import facade.CriminalManagement;
+import model.BiometricData;
+import model.CaseRecord;
 import model.Criminal;
+import model.Evidence;
 import java.util.Collection;
 import java.util.InputMismatchException;
 import java.util.Scanner;
@@ -32,19 +35,27 @@ public class MainUI {
     private static void runMenu(Scanner sc, CriminalManagement management) {
         while (true) {
             System.out.println("\n===== Criminal Management Menu =====");
-            System.out.println("1. Add Criminal");
+            System.out.println("1. Register Criminal");
             System.out.println("2. Search Criminal by ID");
             System.out.println("3. Update Criminal Crime Type");
             System.out.println("4. Delete Criminal");
             System.out.println("5. List All Criminals");
-            System.out.println("6. Exit");
+            System.out.println("6. View Criminal Details");
+            System.out.println("7. Create Case");
+            System.out.println("8. Assign Case");
+            System.out.println("9. List All Cases");
+            System.out.println("10. Add Evidence");
+            System.out.println("11. List Evidence By Case");
+            System.out.println("12. Store Biometric Data");
+            System.out.println("13. View Biometric Data");
+            System.out.println("14. Exit");
             System.out.print("Choose option: ");
 
             int choice = readInt(sc);
 
             switch (choice) {
                 case 1:
-                    addCriminalFlow(sc, management);
+                    registerCriminalFlow(sc, management);
                     break;
                 case 2:
                     searchCriminalFlow(sc, management);
@@ -59,15 +70,39 @@ public class MainUI {
                     listAllCriminalsFlow(management);
                     break;
                 case 6:
+                    viewCriminalDetailsFlow(sc, management);
+                    break;
+                case 7:
+                    createCaseFlow(sc, management);
+                    break;
+                case 8:
+                    assignCaseFlow(sc, management);
+                    break;
+                case 9:
+                    listAllCasesFlow(management);
+                    break;
+                case 10:
+                    addEvidenceFlow(sc, management);
+                    break;
+                case 11:
+                    listEvidenceByCaseFlow(sc, management);
+                    break;
+                case 12:
+                    storeBiometricFlow(sc, management);
+                    break;
+                case 13:
+                    viewBiometricFlow(sc, management);
+                    break;
+                case 14:
                     System.out.println("Exiting system. Goodbye.");
                     return;
                 default:
-                    System.out.println("Invalid option. Please choose 1-6.");
+                    System.out.println("Invalid option. Please choose 1-14.");
             }
         }
     }
 
-    private static void addCriminalFlow(Scanner sc, CriminalManagement management) {
+    private static void registerCriminalFlow(Scanner sc, CriminalManagement management) {
         System.out.print("Enter Criminal ID: ");
         int id = readInt(sc);
 
@@ -80,9 +115,9 @@ public class MainUI {
         System.out.print("Enter Crime Type: ");
         String crime = sc.nextLine().trim();
 
-        boolean added = management.addCriminal(id, name, age, crime);
+        boolean added = management.registerCriminal(id, name, age, crime);
         if (added) {
-            System.out.println("Criminal added successfully.");
+            System.out.println("Criminal registered successfully.");
         } else {
             System.out.println("Criminal ID already exists. Try a unique ID.");
         }
@@ -139,6 +174,149 @@ public class MainUI {
         for (Criminal c : criminals) {
             printCriminal(c);
         }
+    }
+
+    private static void viewCriminalDetailsFlow(Scanner sc, CriminalManagement management) {
+        System.out.print("Enter Criminal ID to view details: ");
+        int id = readInt(sc);
+        Criminal criminal = management.getCriminalDetails(id);
+        if (criminal == null) {
+            System.out.println("No criminal found for ID " + id + ".");
+            return;
+        }
+        printCriminal(criminal);
+    }
+
+    private static void createCaseFlow(Scanner sc, CriminalManagement management) {
+        System.out.print("Enter Case ID: ");
+        int caseId = readInt(sc);
+
+        System.out.print("Enter Criminal ID: ");
+        int criminalId = readInt(sc);
+
+        System.out.print("Enter Case Description: ");
+        String description = sc.nextLine().trim();
+
+        System.out.print("Enter Assigned Officer (optional): ");
+        String assignedOfficer = sc.nextLine().trim();
+
+        boolean created;
+        if (assignedOfficer.isEmpty()) {
+            created = management.createCase(caseId, criminalId, description);
+        } else {
+            created = management.createCase(caseId, criminalId, description, assignedOfficer);
+        }
+
+        if (created) {
+            System.out.println("Case created successfully.");
+        } else {
+            System.out.println("Case creation failed. Check Criminal ID or duplicate Case ID.");
+        }
+    }
+
+    private static void assignCaseFlow(Scanner sc, CriminalManagement management) {
+        System.out.print("Enter Case ID to assign: ");
+        int caseId = readInt(sc);
+
+        System.out.print("Enter Officer Name: ");
+        String officer = sc.nextLine().trim();
+
+        boolean assigned = management.assignCase(caseId, officer);
+        if (assigned) {
+            System.out.println("Case assigned successfully.");
+        } else {
+            System.out.println("Case ID not found.");
+        }
+    }
+
+    private static void listAllCasesFlow(CriminalManagement management) {
+        Collection<CaseRecord> cases = management.getAllCases();
+        if (cases.isEmpty()) {
+            System.out.println("No case records found.");
+            return;
+        }
+
+        System.out.println("\n--- Case Records ---");
+        for (CaseRecord caseRecord : cases) {
+            System.out.println(
+                "Case ID: " + caseRecord.getCaseId() +
+                " | Criminal ID: " + caseRecord.getCriminalId() +
+                " | Assigned Officer: " + caseRecord.getAssignedOfficer() +
+                " | Description: " + caseRecord.getDescription()
+            );
+        }
+    }
+
+    private static void addEvidenceFlow(Scanner sc, CriminalManagement management) {
+        System.out.print("Enter Evidence ID: ");
+        int evidenceId = readInt(sc);
+
+        System.out.print("Enter Case ID: ");
+        int caseId = readInt(sc);
+
+        System.out.print("Enter Evidence Type: ");
+        String evidenceType = sc.nextLine().trim();
+
+        boolean added = management.addEvidence(evidenceId, caseId, evidenceType);
+        if (added) {
+            System.out.println("Evidence added successfully.");
+        } else {
+            System.out.println("Evidence add failed. Check duplicate Evidence ID or Case ID.");
+        }
+    }
+
+    private static void listEvidenceByCaseFlow(Scanner sc, CriminalManagement management) {
+        System.out.print("Enter Case ID to list evidence: ");
+        int caseId = readInt(sc);
+        Collection<Evidence> evidenceList = management.getEvidenceByCase(caseId);
+        if (evidenceList.isEmpty()) {
+            System.out.println("No evidence found for case " + caseId + ".");
+            return;
+        }
+
+        System.out.println("\n--- Evidence Records ---");
+        for (Evidence evidence : evidenceList) {
+            System.out.println(
+                "Evidence ID: " + evidence.getEvidenceId() +
+                " | Case ID: " + evidence.getCaseId() +
+                " | Type: " + evidence.getEvidenceType()
+            );
+        }
+    }
+
+    private static void storeBiometricFlow(Scanner sc, CriminalManagement management) {
+        System.out.print("Enter Criminal ID: ");
+        int criminalId = readInt(sc);
+
+        System.out.print("Enter Fingerprint: ");
+        String fingerprint = sc.nextLine().trim();
+
+        System.out.print("Enter DNA: ");
+        String dna = sc.nextLine().trim();
+
+        boolean stored = management.storeBiometric(criminalId, fingerprint, dna);
+        if (stored) {
+            System.out.println("Biometric data stored successfully.");
+        } else {
+            System.out.println("Biometric storage failed. Criminal ID not found.");
+        }
+    }
+
+    private static void viewBiometricFlow(Scanner sc, CriminalManagement management) {
+        System.out.print("Enter Criminal ID to view biometric data: ");
+        int criminalId = readInt(sc);
+        BiometricData biometricData = management.getBiometric(criminalId);
+
+        if (biometricData == null) {
+            System.out.println("No biometric data found for criminal " + criminalId + ".");
+            return;
+        }
+
+        System.out.println(
+            "Criminal ID: " + biometricData.getCriminalId() +
+            " | Fingerprint: " + biometricData.getFingerprint() +
+            " | DNA: " + biometricData.getDna()
+        );
     }
 
     private static int readInt(Scanner sc) {

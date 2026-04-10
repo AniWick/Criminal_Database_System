@@ -13,6 +13,10 @@ public final class ModelFactory {
         return new CaseRecord(caseId, criminalId, description);
     }
 
+    public static CaseRecord createCaseRecord(int caseId, int criminalId, String description, String assignedOfficer) {
+        return new CaseRecord(caseId, criminalId, description, assignedOfficer);
+    }
+
     public static Evidence createEvidence(int evidenceId, int caseId, String evidenceType) {
         return new Evidence(evidenceId, caseId, evidenceType);
     }

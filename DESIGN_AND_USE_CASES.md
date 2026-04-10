@@ -1,185 +1,172 @@
 # Criminal Management System Design Notes
 
-## 1. Project Architecture
+## 1. Architecture (MVC)
 
-The project follows MVC:
+The project follows MVC with a layered flow:
 
+View -> Facade -> Controller -> Service -> Repository/Database
+
+Packages:
 - View: [view/MainUI.java](view/MainUI.java)
-- Controller: [controller/CriminalController.java](controller/CriminalController.java), [controller/CaseController.java](controller/CaseController.java), [controller/LoginController.java](controller/LoginController.java)
-- Service: [service/CriminalService.java](service/CriminalService.java), [service/CaseService.java](service/CaseService.java), [service/AuthService.java](service/AuthService.java), [service/BiometricService.java](service/BiometricService.java)
+- Controller: [controller/](controller)
+- Service: [service/](service)
+- Facade: [facade/](facade)
 - Model/Data: [model/](model), [database/CriminalDatabase.java](database/CriminalDatabase.java)
 
-The UI reads input, controllers coordinate requests, services hold business rules, and the database class persists the data snapshot.
+The view only handles input/output, business rules are in services, and persistence is centralized in the database class.
 
-## 2. Use Cases
+## 2. Major Features (Use Cases)
 
-### Use Case 1: Login
+### Use Case 1: User Login / Authentication
 
 Actor: Officer or detective.
 
 Flow:
-1. User enters username and password in the console UI.
-2. [view/MainUI.java](view/MainUI.java) sends the credentials to [facade/CriminalManagementFacade.java](facade/CriminalManagementFacade.java).
-3. The facade forwards the request to [controller/LoginController.java](controller/LoginController.java).
-4. [service/AuthService.java](service/AuthService.java) checks the user in [database/CriminalDatabase.java](database/CriminalDatabase.java).
+1. User enters username and password in [view/MainUI.java](view/MainUI.java).
+2. Request goes through [facade/CriminalManagementFacade.java](facade/CriminalManagementFacade.java).
+3. [controller/LoginController.java](controller/LoginController.java) forwards to [service/AuthService.java](service/AuthService.java).
+4. [database/CriminalDatabase.java](database/CriminalDatabase.java) validates credentials from stored users.
 
-### Use Case 2: Add Criminal
-
-Actor: Logged-in officer.
-
-Flow:
-1. The UI collects criminal details.
-2. [controller/CriminalController.java](controller/CriminalController.java) validates the input using [validation/CriminalValidator.java](validation/CriminalValidator.java).
-3. The controller uses the Builder in [model/Criminal.java](model/Criminal.java) to create the object.
-4. [service/CriminalService.java](service/CriminalService.java) saves it through [repository/InMemoryCriminalRepository.java](repository/InMemoryCriminalRepository.java).
-
-### Use Case 3: Search Criminal
+### Use Case 2: Register Criminal (Add Criminal Record)
 
 Actor: Logged-in officer.
 
 Flow:
-1. The UI requests a criminal by ID.
-2. The controller delegates to [service/CriminalService.java](service/CriminalService.java).
-3. The service uses the Strategy pattern through [strategy/CriminalSearchStrategy.java](strategy/CriminalSearchStrategy.java) and [strategy/CriminalIdSearchStrategy.java](strategy/CriminalIdSearchStrategy.java).
-4. The repository retrieves the record from the database store.
+1. UI collects criminal details (ID, name, age, crime).
+2. [controller/CriminalController.java](controller/CriminalController.java) validates input with [validation/CriminalValidator.java](validation/CriminalValidator.java).
+3. Controller builds `Criminal` using Builder pattern.
+4. [service/CriminalService.java](service/CriminalService.java) saves via [repository/InMemoryCriminalRepository.java](repository/InMemoryCriminalRepository.java).
 
-### Use Case 4: Update or Delete Criminal
-
-Actor: Logged-in officer.
-
-Flow:
-1. The UI sends the criminal ID and new data.
-2. The controller forwards the operation to the service layer.
-3. The service calls the repository abstraction.
-4. [database/CriminalDatabase.java](database/CriminalDatabase.java) updates or removes the record and saves the snapshot.
-
-### Use Case 5: Create Case Record
+### Use Case 3: Update Criminal Record
 
 Actor: Logged-in officer.
 
 Flow:
-1. The UI or controller supplies case details.
-2. [controller/CaseController.java](controller/CaseController.java) creates the object through [model/ModelFactory.java](model/ModelFactory.java).
-3. [service/CaseService.java](service/CaseService.java) stores the case in [database/CriminalDatabase.java](database/CriminalDatabase.java).
+1. User supplies criminal ID and updated crime type.
+2. Controller -> Service -> Repository updates persistence.
+3. [database/CriminalDatabase.java](database/CriminalDatabase.java) saves to disk.
 
-## 3. Design Patterns Implemented
+### Use Case 4: Search Criminal
+
+Actor: Logged-in officer.
+
+Flow:
+1. User searches by criminal ID.
+2. [service/CriminalService.java](service/CriminalService.java) uses Strategy pattern ([strategy/CriminalSearchStrategy.java](strategy/CriminalSearchStrategy.java), [strategy/CriminalIdSearchStrategy.java](strategy/CriminalIdSearchStrategy.java)).
+3. Repository returns matching record from the database store.
+
+### Use Case 5: Manage Cases (Create and Assign Cases)
+
+Actor: Logged-in officer.
+
+Flow:
+1. User creates a case with case ID, criminal ID, description, and optional assigned officer.
+2. [controller/CaseController.java](controller/CaseController.java) creates model object through [model/ModelFactory.java](model/ModelFactory.java).
+3. [service/CaseService.java](service/CaseService.java) stores the case.
+4. User can assign/reassign case ownership later using case ID + officer name.
+
+## 3. Minor Features
+
+### Use Case 6: Add Evidence
+
+Actor: Logged-in officer.
+
+Flow:
+1. User enters evidence ID, case ID, and evidence type.
+2. [controller/EvidenceController.java](controller/EvidenceController.java) creates evidence via factory.
+3. [service/EvidenceService.java](service/EvidenceService.java) writes to [database/CriminalDatabase.java](database/CriminalDatabase.java).
+
+### Use Case 7: Store Biometric Data
+
+Actor: Logged-in officer.
+
+Flow:
+1. User enters criminal ID, fingerprint, and DNA.
+2. [controller/BiometricController.java](controller/BiometricController.java) builds biometric object.
+3. [service/BiometricService.java](service/BiometricService.java) stores/retrieves biometric data in database.
+
+### Use Case 8: View Criminal Details
+
+Actor: Logged-in officer.
+
+Flow:
+1. User requests details by criminal ID.
+2. Facade delegates to criminal controller search/details method.
+3. UI displays ID, name, age, and crime.
+
+### Use Case 9: List All Cases
+
+Actor: Logged-in officer.
+
+Flow:
+1. User chooses list all cases from menu.
+2. [controller/CaseController.java](controller/CaseController.java) retrieves all case records via service.
+3. UI prints case ID, criminal ID, assigned officer, and description.
+
+## 4. Design Patterns Implemented
 
 ### Singleton
-
-Implemented in [app/AppContext.java](app/AppContext.java).
-
-How it was done:
-- A single private static instance is created.
-- The constructor is private.
-- `getInstance()` returns the same global object.
-
-Why it matters:
-- The application has one central place to access the main facade.
+- File: [app/AppContext.java](app/AppContext.java)
+- Why: one global access point for application facade.
 
 ### Facade
-
-Implemented in [facade/CriminalManagementFacade.java](facade/CriminalManagementFacade.java).
-
-How it was done:
-- The facade exposes a simple interface for login and criminal operations.
-- It hides the controller details from the UI.
-
-Why it matters:
-- The UI does not need to know the internal service/controller structure.
+- Files: [facade/CriminalManagement.java](facade/CriminalManagement.java), [facade/CriminalManagementFacade.java](facade/CriminalManagementFacade.java)
+- Why: UI talks to one API instead of many internal classes.
 
 ### Builder
-
-Implemented in [model/Criminal.java](model/Criminal.java).
-
-How it was done:
-- The nested `Builder` class collects field values step by step.
-- The controller builds a `Criminal` using chained methods.
-
-Why it matters:
-- It makes object creation clearer and easier to extend later.
+- File: [model/Criminal.java](model/Criminal.java)
+- Why: clean criminal object construction.
 
 ### Factory
-
-Implemented in [model/ModelFactory.java](model/ModelFactory.java).
-
-How it was done:
-- Static factory methods create `Criminal`, `CaseRecord`, `Evidence`, `BiometricData`, and `User` objects.
-- Seed data in [database/CriminalDatabase.java](database/CriminalDatabase.java) uses the factory methods.
-
-Why it matters:
-- Object creation is centralized in one place.
+- File: [model/ModelFactory.java](model/ModelFactory.java)
+- Why: centralized model creation for criminal/case/evidence/biometric/user.
 
 ### Strategy
+- Files: [strategy/CriminalSearchStrategy.java](strategy/CriminalSearchStrategy.java), [strategy/CriminalIdSearchStrategy.java](strategy/CriminalIdSearchStrategy.java)
+- Why: search behavior remains extensible.
 
-Implemented in [strategy/CriminalSearchStrategy.java](strategy/CriminalSearchStrategy.java) and [strategy/CriminalIdSearchStrategy.java](strategy/CriminalIdSearchStrategy.java).
+## 5. Design Principles Visible in Code
 
-How it was done:
-- The service depends on the strategy interface instead of a concrete search method.
-- Search behavior can be replaced without changing the controller or UI.
+### Single Responsibility Principle (SRP)
+- Validators validate.
+- Controllers coordinate flows.
+- Services keep business rules.
+- Database handles persistence.
 
-Why it matters:
-- Search logic can grow later, for example search by name or crime type.
+### Open/Closed Principle (OCP)
+- Search strategy can be extended by adding new strategy classes.
+- Factory can be extended with new model creation methods.
 
-## 4. Design Principles Implemented
+### Dependency Inversion Principle (DIP)
+- UI depends on facade abstraction.
+- Service depends on repository/strategy abstractions.
 
-### Single Responsibility Principle
+### Interface Segregation Principle (ISP)
+- Focused interfaces like `CriminalManagement`, `CriminalRepository`, and search strategy.
 
-Visible in:
-- [validation/CriminalValidator.java](validation/CriminalValidator.java) handles validation only.
-- [repository/InMemoryCriminalRepository.java](repository/InMemoryCriminalRepository.java) handles persistence delegation only.
-- Controllers focus on request coordination, not data storage.
+## 6. Current Menu Coverage in UI
 
-How it was done:
-- Validation was separated from object creation and persistence.
-- Data access was moved behind a repository abstraction.
+[view/MainUI.java](view/MainUI.java) includes flows for:
+- Login/authentication
+- Register/add criminal
+- Search criminal
+- Update/delete criminal
+- View criminal details
+- List all criminals
+- Create case
+- Assign case
+- List all cases
+- Add evidence
+- List evidence by case
+- Store biometric
+- View biometric
 
-### Open/Closed Principle
-
-Visible in:
-- [strategy/CriminalSearchStrategy.java](strategy/CriminalSearchStrategy.java)
-- [model/ModelFactory.java](model/ModelFactory.java)
-
-How it was done:
-- New search methods can be added as new strategy classes.
-- New object creation rules can be added in the factory without changing callers.
-
-### Dependency Inversion Principle
-
-Visible in:
-- [service/CriminalService.java](service/CriminalService.java)
-- [repository/CriminalRepository.java](repository/CriminalRepository.java)
-- [facade/CriminalManagement.java](facade/CriminalManagement.java)
-
-How it was done:
-- High-level code depends on interfaces instead of concrete classes.
-- The UI depends on the facade interface.
-- The service depends on repository and strategy interfaces.
-
-### Interface Segregation Principle
-
-Visible in:
-- [facade/CriminalManagement.java](facade/CriminalManagement.java)
-- [repository/CriminalRepository.java](repository/CriminalRepository.java)
-- [strategy/CriminalSearchStrategy.java](strategy/CriminalSearchStrategy.java)
-
-How it was done:
-- Each interface is small and focused on one role.
-- Classes only implement methods they actually need.
-
-## 5. Presentation Points
-
-- MVC is shown by the split between `view`, `controller`, `service`, and `database` packages.
-- Singleton is shown by the single application context instance.
-- Facade is shown by the one-stop `CriminalManagementFacade` used by the UI.
-- Builder is shown by the nested builder inside `Criminal`.
-- Factory is shown by the static methods in `ModelFactory`.
-- Strategy is shown by the search abstraction in the `strategy` package.
-- SRP, OCP, DIP, and ISP are visible in the separate validator, repository, service, and interface layers.
-
-## 6. Short Demo Script
+## 7. Quick Demo Script
 
 1. Log in using `admin / admin123`.
-2. Add a criminal and explain the Builder and validation.
-3. Search a criminal and explain the Strategy + Repository flow.
-4. Create a case and explain the Factory.
-5. Show `AppContext` and explain Singleton + Facade.
+2. Register a new criminal.
+3. Search and view details of that criminal.
+4. Create a case and assign it to an officer.
+5. Add evidence to the case.
+6. Store biometric data for the criminal.
+7. List all cases.

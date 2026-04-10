@@ -13,4 +13,8 @@ public class CaseService {
     public Collection<CaseRecord> getAllCases() {
         return CriminalDatabase.getAllCases();
     }
+
+    public boolean assignCase(int caseId, String assignedOfficer) {
+        return CriminalDatabase.assignCase(caseId, assignedOfficer);
+    }
 }

@@ -94,9 +94,45 @@ public class CriminalDatabase {
         return new ArrayList<>(cases.values());
     }
 
-    public static synchronized void storeBiometric(BiometricData biometricData) {
+    public static synchronized boolean assignCase(int caseId, String assignedOfficer) {
+        CaseRecord caseRecord = cases.get(caseId);
+        if (caseRecord == null) {
+            return false;
+        }
+        caseRecord.setAssignedOfficer(assignedOfficer);
+        saveToDisk();
+        return true;
+    }
+
+    public static synchronized boolean addEvidence(Evidence evidence) {
+        if (evidence == null) {
+            return false;
+        }
+        if (evidences.containsKey(evidence.getEvidenceId()) || !cases.containsKey(evidence.getCaseId())) {
+            return false;
+        }
+        evidences.put(evidence.getEvidenceId(), evidence);
+        saveToDisk();
+        return true;
+    }
+
+    public static synchronized Collection<Evidence> getEvidenceByCase(int caseId) {
+        List<Evidence> byCase = new ArrayList<>();
+        for (Evidence evidence : evidences.values()) {
+            if (evidence.getCaseId() == caseId) {
+                byCase.add(evidence);
+            }
+        }
+        return byCase;
+    }
+
+    public static synchronized boolean storeBiometric(BiometricData biometricData) {
+        if (biometricData == null || !criminals.containsKey(biometricData.getCriminalId())) {
+            return false;
+        }
         biometrics.put(biometricData.getCriminalId(), biometricData);
         saveToDisk();
+        return true;
     }
 
     public static synchronized BiometricData getBiometric(int criminalId) {
