@@ -17,6 +17,7 @@ public class CriminalDatabase {
 
     static {
         loadFromDisk();
+        ensureMinimumSeedData();
     }
 
     public static synchronized User getUser(String username) {
@@ -211,6 +212,81 @@ public class CriminalDatabase {
         biometrics.put(2, ModelFactory.createBiometricData(2, "FP54321", "DNA09876"));
         biometrics.put(3, ModelFactory.createBiometricData(3, "FP11111", "DNA22222"));
         biometrics.put(4, ModelFactory.createBiometricData(4, "FP33333", "DNA44444"));
+    }
+
+    private static void ensureMinimumSeedData() {
+        boolean changed = false;
+
+        if (!users.containsKey("admin")) {
+            users.put("admin", ModelFactory.createUser("admin", "admin123", "Officer"));
+            changed = true;
+        }
+        if (!users.containsKey("detective")) {
+            users.put("detective", ModelFactory.createUser("detective", "detect123", "Detective"));
+            changed = true;
+        }
+
+        Object[][] demoRows = new Object[][] {
+            {1001, "Ethan Cole", 31, "Armed Robbery", 2101, "Downtown vault breach", "Officer Cruz", 5101, "CCTV Footage", "FP-E1001", "DNA-E1001"},
+            {1002, "Nadia Voss", 27, "Identity Theft", 2102, "Synthetic identity network", "Officer Reed", 5102, "Forged IDs", "FP-N1002", "DNA-N1002"},
+            {1003, "Carlos Mendez", 39, "Drug Trafficking", 2103, "Interstate narcotics route", "Detective Park", 5103, "Chemical Samples", "FP-C1003", "DNA-C1003"},
+            {1004, "Liam Porter", 44, "Fraud", 2104, "Insurance fraud ring", "Officer Ellis", 5104, "Financial Ledger", "FP-L1004", "DNA-L1004"},
+            {1005, "Ivy Sloan", 35, "Cyber Crime", 2105, "Ransomware extortion", "Detective Vega", 5105, "Encrypted Drive", "FP-I1005", "DNA-I1005"},
+            {1006, "Marcus Flint", 29, "Kidnapping", 2106, "Hostage relocation case", "Officer Hale", 5106, "Vehicle Fibers", "FP-M1006", "DNA-M1006"},
+            {1007, "Selena Hart", 33, "Money Laundering", 2107, "Layered shell-company transfers", "Detective Khan", 5107, "Bank Statements", "FP-S1007", "DNA-S1007"},
+            {1008, "Noah Briggs", 41, "Arson", 2108, "Warehouse ignition incident", "Officer Bryant", 5108, "Fuel Residue", "FP-N1008", "DNA-N1008"},
+            {1009, "Priya Nair", 30, "Extortion", 2109, "Construction racket threats", "Officer Morgan", 5109, "Audio Recording", "FP-P1009", "DNA-P1009"},
+            {1010, "Omar Haddad", 37, "Weapons Smuggling", 2110, "Unlicensed arms movement", "Detective Singh", 5110, "Ballistic Fragments", "FP-O1010", "DNA-O1010"}
+        };
+
+        for (Object[] row : demoRows) {
+            int criminalId = (Integer) row[0];
+            String name = (String) row[1];
+            int age = (Integer) row[2];
+            String crimeType = (String) row[3];
+            int caseId = (Integer) row[4];
+            String caseDesc = (String) row[5];
+            String officer = (String) row[6];
+            int evidenceId = (Integer) row[7];
+            String evidenceType = (String) row[8];
+            String fingerprint = (String) row[9];
+            String dna = (String) row[10];
+
+            if (!criminals.containsKey(criminalId)) {
+                criminals.put(criminalId, ModelFactory.createCriminal(criminalId, name, age, crimeType));
+                changed = true;
+            }
+
+            if (!cases.containsKey(caseId) && criminals.containsKey(criminalId)) {
+                cases.put(caseId, ModelFactory.createCaseRecord(caseId, criminalId, caseDesc, officer));
+                changed = true;
+            }
+
+            if (!evidences.containsKey(evidenceId) && cases.containsKey(caseId)) {
+                evidences.put(evidenceId, ModelFactory.createEvidence(evidenceId, caseId, evidenceType));
+                changed = true;
+            }
+
+            if (!biometrics.containsKey(criminalId) && criminals.containsKey(criminalId)) {
+                biometrics.put(criminalId, ModelFactory.createBiometricData(criminalId, fingerprint, dna));
+                changed = true;
+            }
+        }
+
+        for (Criminal criminal : criminals.values()) {
+            int criminalId = criminal.getCriminalId();
+            if (!biometrics.containsKey(criminalId)) {
+                biometrics.put(
+                    criminalId,
+                    ModelFactory.createBiometricData(criminalId, "FP-AUTO-" + criminalId, "DNA-AUTO-" + criminalId)
+                );
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            saveToDisk();
+        }
     }
 
     private static class DatabaseSnapshot implements Serializable {
